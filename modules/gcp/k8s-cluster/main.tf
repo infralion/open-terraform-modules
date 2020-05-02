@@ -62,7 +62,8 @@ locals {
   # and project_name_parts[1] contains env and project name respectively
   # ---------------------------------------------------------------------
   cluster_name                 = format("%s-%s-%s%s", local.project_name_parts[2], local.project_name_parts[1], "cluster", local.suffix)
-  cluster_service_account_name = format("%s-%s-%s%s", local.project_name_parts[2], local.project_name_parts[1], "service-account", local.suffix)
+  cluster_service_account_name = format("%s-%s-%s%s", local.project_name_parts[2], local.project_name_parts[1], "sa", local.suffix)
+  cluster_location             = var.cluster_location != null ? var.cluster_location : "${var.region}-a"
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -79,22 +80,25 @@ module "gke_service_account" {
 # CREATE A CLUSTER
 # ---------------------------------------------------------------------------------------------------------------------
 module "gke_cluster" {
-  source                = "./modules/gke-cluster"
-  name                  = var.cluster_name != "" ? var.cluster_name : local.cluster_name
-  gcp_project           = var.gcp_project
-  location              = var.region
-  network               = var.private_network
-  subnetwork            = var.private_subnet
-  service_account_email = module.gke_service_account.email
-  initial_node_count    = var.initial_node_count
-  max_node_count        = var.max_node_count
-  machine_type          = var.machine_type
-  disk_type             = var.disk_type
-  disk_size             = var.disk_size
+  source                            = "./modules/gke-cluster"
+  name                              = var.cluster_name != "" ? var.cluster_name : local.cluster_name
+  gcp_project                       = var.gcp_project
+  location                          = local.cluster_location
+  network                           = var.private_network
+  subnetwork                        = var.private_subnet
+  service_account_email             = module.gke_service_account.email
+  initial_node_count                = var.initial_node_count
+  max_node_count                    = var.max_node_count
+  machine_type                      = var.machine_type
+  disk_type                         = var.disk_type
+  disk_size                         = var.disk_size
+  enable_private_nodes              = var.enable_private_nodes
+  master_authorized_networks_config = var.master_authorized_networks_config
 }
 
-# Configure kubectl with the credentials of the GKE cluster.
+# Configure kubectl with the credentials of the GKE cluster if cluster is public.
 resource "null_resource" "configure_kubectl" {
+  count = var.enable_private_nodes ? 0 : 1
   provisioner "local-exec" {
     command = "gcloud components install beta && gcloud beta container clusters get-credentials ${module.gke_cluster.name} --region ${var.region} --project ${var.gcp_project}"
 

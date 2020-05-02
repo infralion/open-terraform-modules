@@ -8,6 +8,12 @@ variable "region" {
   type        = string
 }
 
+variable "cluster_location" {
+  description = "The location of the cluster. If the cluster is regional, this must be the same region. Otherwise, it should be the zone of the region. Defaults to first zone of the region"
+  type        = string
+  default     = null
+}
+
 variable "private_network" {
   description = "The self link of the VPC with which the cluster needs to be attached to."
   type        = string
@@ -37,7 +43,7 @@ variable "kubernetes_secrets" {
 variable "initial_node_count" {
   description = "Number of nodes the cluster must have."
   type        = number
-  default     = 3
+  default     = 1
 }
 
 variable "max_node_count" {
@@ -56,6 +62,21 @@ variable "disk_size" {
   description = "Size of the disk space for each node."
   type        = number
   default     = 10
+}
+
+variable "enable_private_nodes" {
+  description = "Control whether nodes have internal IP addresses only. If enabled, all nodes are given only RFC 1918 private addresses and communicate with the master via private networking."
+  type        = bool
+  default     = true
+}
+
+variable "master_authorized_networks_config" {
+  description = "The desired configuration options for master authorized networks. Omit the nested cidr_blocks attribute to disallow external access (except the cluster node IPs, which GKE automatically whitelists)"
+  type = list(object({
+    cidr_block   = string
+    display_name = string
+  }))
+  default = null
 }
 
 variable "random_suffix" {

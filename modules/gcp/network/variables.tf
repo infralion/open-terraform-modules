@@ -25,3 +25,9 @@ variable "region" {
   description = "Region for the vpc network. If not given, default will be used."
   default     = "asia-southeast1"
 }
+
+variable "bastion_allowed_members" {
+  type        = list(string)
+  description = "The emails allowed to access bastion host. For users, use \"user:<email>\", for groups, use \"group:<email>\""
+  default     = []
+}
